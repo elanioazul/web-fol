@@ -4,4 +4,19 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background: #25252B;
+  position: relative;
+}
+
+* {
+  touch-action: manipulation;
+}
+
+*,
+
+*:before,
+*:after {
+  box-sizing: border-box;
 }
