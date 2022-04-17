@@ -57,6 +57,9 @@ export class StacyComponent implements OnInit, AfterViewInit {
 
   private scene: THREE.Scene;
 
+  //Model
+  public MODEL_PATH = 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/1376484/stacy_lightweight.glb';
+
   constructor() { }
 
   private animateModel() {
@@ -81,15 +84,21 @@ export class StacyComponent implements OnInit, AfterViewInit {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(this.backgroundColor);
     this.scene.fog = new THREE.Fog(this.backgroundColor, 60, 100);
-    // this.loaderGLTF.load('assets/robot/scene.gltf', (gltf: GLTF) => {
-    //   this.model = gltf.scene.children[0];
-    //   console.log(this.model);
-    //   var box = new THREE.Box3().setFromObject(this.model);
-    //   box.getCenter(this.model.position); // this re-sets the mesh position
-    //   this.model.position.multiplyScalar(-1);
-    //   this.scene.add(this.model);
-    // });
-    //*Camera
+    // Model
+    this.loaderGLTF.load(
+      this.MODEL_PATH,
+      (gltf) => {
+        this.model = gltf.scene;
+        let fileAnimations = gltf.animations;
+        this.scene.add(this.model)
+      },
+      undefined,
+      (error: any) => {
+        console.error(error)
+      }
+    );
+
+    //Camera
     let aspectRatio = this.getAspectRatio();
     this.camera = new THREE.PerspectiveCamera(
       this.fieldOfView,
@@ -143,7 +152,7 @@ export class StacyComponent implements OnInit, AfterViewInit {
       this.camera.updateProjectionMatrix();
     }
     this.renderer.render(this.scene, this.camera);
-    requestAnimationFrame(this.update);
+    requestAnimationFrame(() => this.update);
   }
 
   private resizeRendererToDisplaySize(renderer: THREE.WebGLRenderer): boolean {
