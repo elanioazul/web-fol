@@ -13,6 +13,8 @@ export class StacyComponent implements OnInit, AfterViewInit {
 
   @ViewChild('c')
   private canvasRef: ElementRef;
+  @ViewChild('loading')
+  private loaderRef: ElementRef;
 
   public backgroundColor = 0xf1f1f1;
 
@@ -43,6 +45,11 @@ export class StacyComponent implements OnInit, AfterViewInit {
 
   private model: any;
 
+  private neck: any;
+  private waist: any;
+  private mixer: THREE.AnimationMixer;
+  private idle: any;
+
 
 
   //? Helper Properties (Private Properties);
@@ -70,6 +77,7 @@ export class StacyComponent implements OnInit, AfterViewInit {
 
   private startRenderingLoop() {
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+    this.renderer.shadowMap.enabled = true;
     this.renderer.setPixelRatio(devicePixelRatio);
     this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     let component: StacyComponent = this;
@@ -84,13 +92,58 @@ export class StacyComponent implements OnInit, AfterViewInit {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(this.backgroundColor);
     this.scene.fog = new THREE.Fog(this.backgroundColor, 60, 100);
+    //Init renderer
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+    document.body.appendChild(this.renderer.domElement);
     // Model
     this.loaderGLTF.load(
       this.MODEL_PATH,
       (gltf) => {
         this.model = gltf.scene;
+        console.log(this.model);
         let fileAnimations = gltf.animations;
-        this.scene.add(this.model)
+        this.model.traverse((o: any) => {
+          if (o.isMesh) {
+            o.castShadow = true;
+            o.receiveShadow = true;
+            //o.material = stacy_mtl;
+          }
+          // Reference the neck and waist bones
+          if (o.isBone && o.name === 'mixamorigNeck') {
+            this.neck = o;
+          }
+          if (o.isBone && o.name === 'mixamorigSpine') {
+            this.waist = o;
+          }
+        });
+        this.model.scale.set(7, 7, 7);
+        this.model.position.y = -11;
+        this.scene.add(this.model);
+        this.loaderRef.nativeElement.remove();
+
+        this.mixer = new THREE.AnimationMixer(this.model);
+
+        let clips = fileAnimations.filter(val => val.name !== 'idle');
+        let possibleAnims: any[];
+        possibleAnims = clips.map(val => {
+          let clip = THREE.AnimationClip.findByName(clips, val.name);
+
+          clip.tracks.splice(3, 3);
+          clip.tracks.splice(9, 3);
+          let finalClip;
+          finalClip = this.mixer.clipAction(clip);
+          return finalClip;
+        }
+       );
+       let idleAnim = THREE.AnimationClip.findByName(fileAnimations, 'idle');
+       idleAnim.tracks.splice(3, 3);
+       idleAnim.tracks.splice(9, 3);
+
+       this.idle = this.mixer.clipAction(idleAnim);
+       this.idle.play();
       },
       undefined,
       (error: any) => {
@@ -162,7 +215,7 @@ export class StacyComponent implements OnInit, AfterViewInit {
     let canvasPixelWidth = canvas.width / window.devicePixelRatio;
     let canvasPixelHeight = canvas.height / window.devicePixelRatio;
 
-    const needResize =
+    const needResize: boolean =
       canvasPixelWidth !== width || canvasPixelHeight !== height;
     if (needResize) {
       renderer.setSize(width, height, false);
@@ -175,7 +228,7 @@ export class StacyComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.createScene();
-    this.startRenderingLoop();
+    //this.startRenderingLoop();
     this.update();
   }
 
