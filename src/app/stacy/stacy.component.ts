@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { Mesh } from 'three';
 
 @Component({
   selector: 'app-stacy',
@@ -99,6 +100,13 @@ export class StacyComponent implements OnInit, AfterViewInit {
     this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     document.body.appendChild(this.renderer.domElement);
     // Model
+    let stacy_txt = new THREE.TextureLoader().load('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1376484/stacy.jpg');
+    stacy_txt.flipY = false;
+    const stacy_mtl = new THREE.MeshPhongMaterial({
+      map: stacy_txt,
+      color: 0xffffff,
+      //skinning: true
+    });
     this.loaderGLTF.load(
       this.MODEL_PATH,
       (gltf) => {
@@ -106,10 +114,10 @@ export class StacyComponent implements OnInit, AfterViewInit {
         console.log(this.model);
         let fileAnimations = gltf.animations;
         this.model.traverse((o: any) => {
-          if (o.isMesh) {
+          if ((o as Mesh).isMesh) {
             o.castShadow = true;
             o.receiveShadow = true;
-            //o.material = stacy_mtl;
+            o.material = stacy_mtl;
           }
           // Reference the neck and waist bones
           if (o.isBone && o.name === 'mixamorigNeck') {
@@ -119,7 +127,8 @@ export class StacyComponent implements OnInit, AfterViewInit {
             this.waist = o;
           }
         });
-        this.model.scale.set(7, 7, 7);
+        //https://stackoverflow.com/questions/65692225/mesh-added-to-group-object-while-running-scene-not-visible-in-threejs
+        this.model.scale.set(1, 1, 1);
         this.model.position.y = -11;
         this.scene.add(this.model);
         this.loaderRef.nativeElement.remove();
